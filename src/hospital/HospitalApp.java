@@ -18,8 +18,9 @@ public class HospitalApp {
             System.out.println("\n--- LOGIN SYSTEM ---");
             System.out.println("1. Admin Login");
             System.out.println("2. Doctor Login");
-            System.out.println("3. Patient Self-Registration & Booking");
-            System.out.println("4. Exit");
+            System.out.println("3. Patient Login");
+            System.out.println("4. Patient Self-Registration & Booking");
+            System.out.println("5. Exit");
             System.out.print("Select an option: ");
             
             String choice = scanner.nextLine();
@@ -31,9 +32,12 @@ public class HospitalApp {
                     doctorLogin();
                     break;
                 case "3":
-                    patientSelfBooking();
+                    patientLogin();
                     break;
                 case "4":
+                    patientSelfBooking();
+                    break;
+                case "5":
                     System.out.println("Thank you for using Hospital Management System. Goodbye!");
                     System.exit(0);
                 default:
@@ -129,6 +133,18 @@ public class HospitalApp {
         }
     }
 
+    private static void patientLogin() {
+        System.out.print("Enter Patient ID (e.g., P001): ");
+        String patientId = scanner.nextLine();
+        Patient patient = service.findPatientById(patientId);
+
+        if (patient != null) {
+            patientMenu(patient);
+        } else {
+            System.out.println("Patient ID not found! Please register first.");
+        }
+    }
+
     private static void adminMenu() {
         while (true) {
             System.out.println("\n--- ADMIN DASHBOARD ---");
@@ -170,6 +186,24 @@ public class HospitalApp {
                 case "3": addPrescription(doctor); break;
                 case "4": viewPatientRecords(); break;
                 case "5": return;
+                default: System.out.println("Invalid choice!");
+            }
+        }
+    }
+
+    private static void patientMenu(Patient patient) {
+        while (true) {
+            System.out.println("\n--- PATIENT DASHBOARD (Welcome " + patient.getName() + ") ---");
+            System.out.println("1. View My Appointments");
+            System.out.println("2. View My Prescriptions");
+            System.out.println("3. Logout");
+            System.out.print("Select an option: ");
+
+            String choice = scanner.nextLine();
+            switch (choice) {
+                case "1": viewPatientAppointments(patient); break;
+                case "2": viewPatientPrescriptions(patient); break;
+                case "3": return;
                 default: System.out.println("Invalid choice!");
             }
         }
@@ -296,6 +330,35 @@ public class HospitalApp {
             System.out.println("No prescriptions found.");
         } else {
             for (Prescription pr : pres) System.out.println(pr);
+        }
+    }
+
+    // Patient Functions
+    private static void viewPatientAppointments(Patient patient) {
+        List<Appointment> apps = service.getAppointmentsByPatientId(patient.getId());
+        if (apps.isEmpty()) {
+            System.out.println("\nYou have no scheduled appointments.");
+            return;
+        }
+        System.out.println("\n--- My Appointments ---");
+        System.out.println("------------------------------------------------------");
+        System.out.println("| Doctor ID  | Date         | Time     |");
+        System.out.println("------------------------------------------------------");
+        for (Appointment a : apps) {
+            System.out.printf("| %-10s | %-12s | %-8s |\n", a.getDoctorId(), a.getDate(), a.getTime());
+        }
+        System.out.println("------------------------------------------------------");
+    }
+
+    private static void viewPatientPrescriptions(Patient patient) {
+        List<Prescription> pres = service.getPrescriptionsByPatientId(patient.getId());
+        if (pres.isEmpty()) {
+            System.out.println("\nYou have no prescriptions.");
+            return;
+        }
+        System.out.println("\n--- My Prescriptions ---");
+        for (Prescription pr : pres) {
+            System.out.println(pr);
         }
     }
 }
