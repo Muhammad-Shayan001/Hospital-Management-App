@@ -78,6 +78,12 @@ public class HospitalService {
         return appointments;
     }
 
+    public List<Appointment> getAppointmentsByDoctorId(String doctorId) {
+        return appointments.stream()
+                .filter(a -> a.getDoctorId().equalsIgnoreCase(doctorId))
+                .collect(Collectors.toList());
+    }
+
     // Prescription Management
     public void addPrescription(Prescription prescription) {
         prescriptions.add(prescription);

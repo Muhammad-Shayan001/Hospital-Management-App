@@ -166,7 +166,7 @@ public class HospitalApp {
             String choice = scanner.nextLine();
             switch (choice) {
                 case "1": bookAppointment(doctor); break;
-                case "2": viewAppointments(); break;
+                case "2": viewAppointments(doctor); break;
                 case "3": addPrescription(doctor); break;
                 case "4": viewPatientRecords(); break;
                 case "5": return;
@@ -251,8 +251,12 @@ public class HospitalApp {
         System.out.println("Appointment booked for " + p.getName());
     }
 
-    private static void viewAppointments() {
-        List<Appointment> apps = service.getAllAppointments();
+    private static void viewAppointments(Doctor doctor) {
+        List<Appointment> apps = service.getAppointmentsByDoctorId(doctor.getId());
+        if (apps.isEmpty()) {
+            System.out.println("\nNo scheduled appointments for " + doctor.getName());
+            return;
+        }
         System.out.println("\n------------------------------------------------------");
         System.out.println("| Patient ID | Doctor ID  | Date         | Time     |");
         System.out.println("------------------------------------------------------");
