@@ -1,107 +1,151 @@
 package hospital.service;
 
-import hospital.model.Appointment;
-import hospital.model.Doctor;
-import hospital.model.Patient;
-import hospital.model.Prescription;
-import java.util.ArrayList;
+import hospital.model.*;
+import hospital.util.DataStore;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class HospitalService {
-    private List<Patient> patients;
-    private List<Doctor> doctors;
-    private List<Appointment> appointments;
-    private List<Prescription> prescriptions;
+    private DataStore dataStore;
 
     public HospitalService() {
-        this.patients = new ArrayList<>();
-        this.doctors = new ArrayList<>();
-        this.appointments = new ArrayList<>();
-        this.prescriptions = new ArrayList<>();
-        
-        // Add some initial data for testing
-        initializeData();
+        this.dataStore = DataStore.load();
     }
 
-    private void initializeData() {
-        doctors.add(new Doctor("D001", "Dr. ALi", "Cardiology"));
-        doctors.add(new Doctor("D002", "Dr. Sarah", "Pediatrics"));
-        
-        patients.add(new Patient("P001", "Zain", 30, "Heart Checkup"));
+    public void saveData() {
+        dataStore.save();
     }
 
     // Patient Management
     public void addPatient(Patient patient) {
-        patients.add(patient);
+        dataStore.getPatients().add(patient);
+        saveData();
+    }
+    
+    public void deletePatient(String id) {
+        dataStore.getPatients().removeIf(p -> p.getId().equalsIgnoreCase(id));
+        saveData();
     }
 
     public List<Patient> getAllPatients() {
-        return patients;
+        return dataStore.getPatients();
     }
 
     public Patient findPatientById(String id) {
-        return patients.stream()
+        return dataStore.getPatients().stream()
                 .filter(p -> p.getId().equalsIgnoreCase(id))
                 .findFirst()
                 .orElse(null);
     }
-
-    public List<Patient> searchPatientByName(String name) {
-        return patients.stream()
-                .filter(p -> p.getName().toLowerCase().contains(name.toLowerCase()))
-                .collect(Collectors.toList());
+    
+    public Patient authenticatePatient(String email, String password) {
+        return dataStore.getPatients().stream()
+                .filter(p -> p.getEmail().equalsIgnoreCase(email) && p.getPassword().equals(password))
+                .findFirst()
+                .orElse(null);
     }
 
     // Doctor Management
     public void addDoctor(Doctor doctor) {
-        doctors.add(doctor);
+        dataStore.getDoctors().add(doctor);
+        saveData();
+    }
+    
+    public void deleteDoctor(String id) {
+        dataStore.getDoctors().removeIf(d -> d.getId().equalsIgnoreCase(id));
+        saveData();
     }
 
     public List<Doctor> getAllDoctors() {
-        return doctors;
+        return dataStore.getDoctors();
+    }
+    
+    public List<Doctor> getApprovedDoctors() {
+        return dataStore.getDoctors().stream()
+                .filter(Doctor::isApproved)
+                .collect(Collectors.toList());
     }
 
     public Doctor findDoctorById(String id) {
-        return doctors.stream()
+        return dataStore.getDoctors().stream()
                 .filter(d -> d.getId().equalsIgnoreCase(id))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    public Doctor authenticateDoctor(String email, String password) {
+        return dataStore.getDoctors().stream()
+                .filter(d -> d.getEmail().equalsIgnoreCase(email) && d.getPassword().equals(password))
                 .findFirst()
                 .orElse(null);
     }
 
     // Appointment Management
     public void scheduleAppointment(Appointment appointment) {
-        appointments.add(appointment);
+        dataStore.getAppointments().add(appointment);
+        saveData();
     }
 
     public List<Appointment> getAllAppointments() {
-        return appointments;
+        return dataStore.getAppointments();
     }
 
     public List<Appointment> getAppointmentsByDoctorId(String doctorId) {
-        return appointments.stream()
+        return dataStore.getAppointments().stream()
                 .filter(a -> a.getDoctorId().equalsIgnoreCase(doctorId))
                 .collect(Collectors.toList());
     }
 
     public List<Appointment> getAppointmentsByPatientId(String patientId) {
-        return appointments.stream()
+        return dataStore.getAppointments().stream()
                 .filter(a -> a.getPatientId().equalsIgnoreCase(patientId))
                 .collect(Collectors.toList());
+    }
+    
+    public Appointment findAppointmentById(String id) {
+        return dataStore.getAppointments().stream()
+                .filter(a -> a.getId().equalsIgnoreCase(id))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    public void approveAppointment(Appointment app) {
+        String today = LocalDate.now().toString();
+        if (!today.equals(dataStore.getLastTokenDate())) {
+            dataStore.setLastTokenDate(today);
+            dataStore.setLastTokenNumber(0);
+        }
+        
+        int newToken = dataStore.getLastTokenNumber() + 1;
+        dataStore.setLastTokenNumber(newToken);
+        
+        app.setTokenNumber(newToken);
+        app.setStatus("APPROVED");
+        saveData();
+    }
+    
+    public void rejectAppointment(Appointment app) {
+        app.setStatus("REJECTED");
+        app.setTokenNumber(0);
+        saveData();
     }
 
     // Prescription Management
     public void addPrescription(Prescription prescription) {
-        prescriptions.add(prescription);
+        dataStore.getPrescriptions().add(prescription);
+        dataStore.exportPrescription(prescription); // Save to uploads/
+        saveData();
     }
 
     public List<Prescription> getPrescriptionsByPatientId(String patientId) {
-        return prescriptions.stream()
+        return dataStore.getPrescriptions().stream()
                 .filter(pr -> pr.getPatientId().equalsIgnoreCase(patientId))
                 .collect(Collectors.toList());
     }
     
     public List<Prescription> getAllPrescriptions() {
-        return prescriptions;
+        return dataStore.getPrescriptions();
     }
 }

@@ -1,364 +1,468 @@
 package hospital;
 
-import hospital.model.Appointment;
-import hospital.model.Doctor;
-import hospital.model.Patient;
-import hospital.model.Prescription;
+import hospital.model.*;
 import hospital.service.HospitalService;
+import hospital.util.AIHelper;
+
 import java.util.List;
 import java.util.Scanner;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class HospitalApp {
     private static final Scanner scanner = new Scanner(System.in);
     private static final HospitalService service = new HospitalService();
+    private static final String ADMIN_EMAIL = "muhammad.shayan0927@gmail.com";
+    private static String adminPassword = "Admin123"; // Default admin password
 
     public static void main(String[] args) {
-        showWelcomeMessage();
+        System.out.println("==================================================");
+        System.out.println("     🏥 HOSPITAL MANAGEMENT SYSTEM (CLI)     ");
+        System.out.println("==================================================");
+
         while (true) {
-            System.out.println("\n--- LOGIN SYSTEM ---");
-            System.out.println("1. Admin Login");
-            System.out.println("2. Doctor Login");
-            System.out.println("3. Patient Login");
-            System.out.println("4. Patient Self-Registration & Booking");
-            System.out.println("5. Exit");
+            System.out.println("\n--- MAIN MENU ---");
+            System.out.println("1. Login");
+            System.out.println("2. Register");
+            System.out.println("3. AI Medical Assistant");
+            System.out.println("4. Exit");
             System.out.print("Select an option: ");
-            
-            String choice = scanner.nextLine();
+
+            String choice = scanner.nextLine().trim();
             switch (choice) {
                 case "1":
-                    adminLogin();
+                    loginMenu();
                     break;
                 case "2":
-                    doctorLogin();
+                    registerMenu();
                     break;
                 case "3":
-                    patientLogin();
+                    AIHelper.startChat(scanner);
                     break;
                 case "4":
-                    patientSelfBooking();
-                    break;
-                case "5":
-                    System.out.println("Thank you for using Hospital Management System. Goodbye!");
+                    System.out.println("Thank you for using the Hospital Management System. Goodbye!");
                     System.exit(0);
                 default:
-                    System.out.println("Invalid choice! Please try again.");
+                    System.out.println("❌ Invalid choice! Please try again.");
             }
         }
     }
 
-    private static void showWelcomeMessage() {
-        System.out.println("==================================================");
-        System.out.println("     HOSPITAL MANAGEMENT SYSTEM (CLI)     ");
-        System.out.println("==================================================");
-        System.out.println("Developed for University Semester Project");
-    }
+    private static void loginMenu() {
+        System.out.println("\n--- LOGIN ---");
+        System.out.println("1. Admin Login");
+        System.out.println("2. Doctor Login");
+        System.out.println("3. Patient Login");
+        System.out.println("4. Back to Main Menu");
+        System.out.print("Select role: ");
 
-    private static void patientSelfBooking() {
-        System.out.println("\n--- PATIENT SELF-REGISTRATION ---");
-        
-        // Auto-generate Patient ID
-        String newPatientId = "P" + String.format("%03d", service.getAllPatients().size() + 1);
-        
-        System.out.print("Enter your Name: ");
-        String name = scanner.nextLine();
-        
-        System.out.print("Enter your Age: ");
-        int age;
-        try {
-            age = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid age! Registration failed.");
+        String choice = scanner.nextLine().trim();
+        if (choice.equals("4"))
             return;
-        }
-        
-        System.out.print("Enter your Disease/Reason for visit: ");
-        String disease = scanner.nextLine();
-        
-        Patient newPatient = new Patient(newPatientId, name, age, disease);
-        service.addPatient(newPatient);
-        
-        System.out.println("\n✅ Registration successful!");
-        System.out.println("Your Auto-Generated Patient ID is: " + newPatientId);
-        
-        System.out.print("\nDo you want to book an appointment now? (yes/no): ");
-        if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
-            System.out.println("\n--- AVAILABLE DOCTORS ---");
-            viewAllDoctors();
-            
-            System.out.print("Enter the ID of the Doctor you want to see: ");
-            String docId = scanner.nextLine();
-            Doctor doc = service.findDoctorById(docId);
-            
-            if (doc != null) {
-                System.out.print("Enter preferred Date (DD/MM/YYYY): ");
-                String date = scanner.nextLine();
-                System.out.print("Enter preferred Time (HH:MM): ");
-                String time = scanner.nextLine();
-                
-                // Book appointment and generate a Token
-                String appointmentToken = "TKN-" + (service.getAllAppointments().size() + 101);
-                service.scheduleAppointment(new Appointment(newPatientId, docId, date, time));
-                
-                System.out.println("\n✅ Appointment Booked Successfully!");
-                System.out.println("★ Your Appointment Token/No is: " + appointmentToken + " ★");
-                System.out.println("Please keep this token for your reference.");
+
+        System.out.print("Enter Email: ");
+        String email = scanner.nextLine().trim();
+        System.out.print("Enter Password: ");
+        String password = scanner.nextLine().trim();
+
+        if (choice.equals("1")) {
+            if (email.equalsIgnoreCase(ADMIN_EMAIL) && password.equals(adminPassword)) {
+                System.out.println("\n✅ Login Successful!");
+                adminMenu();
             } else {
-                System.out.println("❌ Doctor not found. Appointment booking cancelled.");
+                System.out.println("❌ Invalid Admin Credentials!");
             }
-        }
-    }
-
-    private static void adminLogin() {
-        System.out.print("Enter Admin Username: ");
-        String username = scanner.nextLine();
-        System.out.print("Enter Admin Password: ");
-        String password = scanner.nextLine();
-
-        if (username.equals("admin") && password.equals("admin123")) {
-            adminMenu();
+        } else if (choice.equals("2")) {
+            Doctor doc = service.authenticateDoctor(email, password);
+            if (doc != null) {
+                if (!doc.isApproved()) {
+                    System.out.println("❌ Account pending admin approval.");
+                } else {
+                    System.out.println("\n✅ Login Successful!");
+                    doctorMenu(doc);
+                }
+            } else {
+                System.out.println("❌ Invalid Doctor Credentials!");
+            }
+        } else if (choice.equals("3")) {
+            Patient pat = service.authenticatePatient(email, password);
+            if (pat != null) {
+                System.out.println("\n✅ Login Successful!");
+                patientMenu(pat);
+            } else {
+                System.out.println("❌ Invalid Patient Credentials!");
+            }
         } else {
-            System.out.println("Invalid credentials!");
+            System.out.println("❌ Invalid choice.");
         }
     }
 
-    private static void doctorLogin() {
-        System.out.print("Enter Doctor ID (e.g., D001): ");
-        String doctorId = scanner.nextLine();
-        Doctor doctor = service.findDoctorById(doctorId);
+    private static void registerMenu() {
+        System.out.println("\n--- REGISTRATION ---");
+        System.out.println("1. Doctor Registration");
+        System.out.println("2. Patient Registration");
+        System.out.println("3. Back to Main Menu");
+        System.out.print("Select option: ");
 
-        if (doctor != null) {
-            doctorMenu(doctor);
-        } else {
-            System.out.println("Doctor ID not found!");
+        String choice = scanner.nextLine().trim();
+        if (choice.equals("1")) {
+            System.out.print("Enter Name: ");
+            String name = scanner.nextLine();
+            System.out.print("Enter Email: ");
+            String email = scanner.nextLine();
+            System.out.print("Enter Password: ");
+            String pass = scanner.nextLine();
+            System.out.print("Enter Specialization: ");
+            String spec = scanner.nextLine();
+            String id = "D" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+
+            Doctor doc = new Doctor(id, name, email, pass, spec, false);
+            service.addDoctor(doc);
+            System.out.println("✅ Registration successful. Waiting for admin approval.");
+
+        } else if (choice.equals("2")) {
+            System.out.print("Enter Name: ");
+            String name = scanner.nextLine();
+            System.out.print("Enter Email: ");
+            String email = scanner.nextLine();
+            System.out.print("Enter Password: ");
+            String pass = scanner.nextLine();
+            System.out.print("Enter Age: ");
+            int age = Integer.parseInt(scanner.nextLine());
+            System.out.print("Enter Disease/Symptom: ");
+            String disease = scanner.nextLine();
+            String id = "P" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+
+            Patient pat = new Patient(id, name, email, pass, age, disease);
+            service.addPatient(pat);
+            System.out.println("✅ Registration successful. You can now login.");
         }
     }
 
-    private static void patientLogin() {
-        System.out.print("Enter Patient ID (e.g., P001): ");
-        String patientId = scanner.nextLine();
-        Patient patient = service.findPatientById(patientId);
-
-        if (patient != null) {
-            patientMenu(patient);
-        } else {
-            System.out.println("Patient ID not found! Please register first.");
-        }
-    }
-
+    // ================= ADMIN MENU =================
     private static void adminMenu() {
         while (true) {
             System.out.println("\n--- ADMIN DASHBOARD ---");
-            System.out.println("1. Add New Doctor");
-            System.out.println("2. View All Doctors");
-            System.out.println("3. Add New Patient");
-            System.out.println("4. View All Patients");
-            System.out.println("5. Search Patient");
-            System.out.println("6. Logout");
+            System.out.println("1. Manage Doctors");
+            System.out.println("2. Manage Patients");
+            System.out.println("3. Approve Doctor Registrations");
+            System.out.println("4. Reset User Password");
+            System.out.println("5. View All Appointments");
+            System.out.println("6. View All Prescriptions");
+            System.out.println("7. Logout");
             System.out.print("Select an option: ");
 
-            String choice = scanner.nextLine();
+            String choice = scanner.nextLine().trim();
             switch (choice) {
-                case "1": addDoctor(); break;
-                case "2": viewAllDoctors(); break;
-                case "3": addPatient(); break;
-                case "4": viewAllPatients(); break;
-                case "5": searchPatient(); break;
-                case "6": return;
-                default: System.out.println("Invalid choice!");
+                case "1":
+                    manageDoctors();
+                    break;
+                case "2":
+                    managePatients();
+                    break;
+                case "3":
+                    approveDoctors();
+                    break;
+                case "4":
+                    resetPassword();
+                    break;
+                case "5":
+                    viewAllAppointments();
+                    break;
+                case "6":
+                    viewAllPrescriptions();
+                    break;
+                case "7":
+                    return;
+                default:
+                    System.out.println("❌ Invalid choice!");
             }
         }
     }
 
-    private static void doctorMenu(Doctor doctor) {
-        while (true) {
-            System.out.println("\n--- DOCTOR DASHBOARD (Welcome " + doctor.getName() + ") ---");
-            System.out.println("1. Book Appointment");
-            System.out.println("2. View Scheduled Appointments");
-            System.out.println("3. Add Prescription");
-            System.out.println("4. View Patient Medical Records");
-            System.out.println("5. Logout");
-            System.out.print("Select an option: ");
+    private static void manageDoctors() {
+        System.out.println("\n--- Manage Doctors ---");
+        System.out.println("1. Add Doctor");
+        System.out.println("2. Edit Doctor");
+        System.out.println("3. Delete Doctor");
+        System.out.println("4. View All Doctors");
+        System.out.print("Select: ");
+        String choice = scanner.nextLine().trim();
 
-            String choice = scanner.nextLine();
-            switch (choice) {
-                case "1": bookAppointment(doctor); break;
-                case "2": viewAppointments(doctor); break;
-                case "3": addPrescription(doctor); break;
-                case "4": viewPatientRecords(); break;
-                case "5": return;
-                default: System.out.println("Invalid choice!");
-            }
-        }
-    }
-
-    private static void patientMenu(Patient patient) {
-        while (true) {
-            System.out.println("\n--- PATIENT DASHBOARD (Welcome " + patient.getName() + ") ---");
-            System.out.println("1. View My Appointments");
-            System.out.println("2. View My Prescriptions");
-            System.out.println("3. Logout");
-            System.out.print("Select an option: ");
-
-            String choice = scanner.nextLine();
-            switch (choice) {
-                case "1": viewPatientAppointments(patient); break;
-                case "2": viewPatientPrescriptions(patient); break;
-                case "3": return;
-                default: System.out.println("Invalid choice!");
-            }
-        }
-    }
-
-    // Admin Functions
-    private static void addDoctor() {
-        System.out.print("Enter Doctor ID: ");
-        String id = scanner.nextLine();
-        System.out.print("Enter Name: ");
-        String name = scanner.nextLine();
-        System.out.print("Enter Specialization: ");
-        String spec = scanner.nextLine();
-        service.addDoctor(new Doctor(id, name, spec));
-        System.out.println("Doctor added successfully!");
-    }
-
-    private static void viewAllDoctors() {
-        List<Doctor> doctors = service.getAllDoctors();
-        System.out.println("\n-------------------------------------------------------------");
-        System.out.println("| ID         | Name                 | Specialization       |");
-        System.out.println("-------------------------------------------------------------");
-        for (Doctor d : doctors) System.out.println(d);
-        System.out.println("-------------------------------------------------------------");
-    }
-
-    private static void addPatient() {
-        System.out.print("Enter Patient ID: ");
-        String id = scanner.nextLine();
-        System.out.print("Enter Name: ");
-        String name = scanner.nextLine();
-        System.out.print("Enter Age: ");
-        int age = Integer.parseInt(scanner.nextLine());
-        System.out.print("Enter Disease/Reason: ");
-        String disease = scanner.nextLine();
-        service.addPatient(new Patient(id, name, age, disease));
-        System.out.println("Patient record created!");
-    }
-
-    private static void viewAllPatients() {
-        List<Patient> patients = service.getAllPatients();
-        System.out.println("\n-------------------------------------------------------------------------");
-        System.out.println("| ID         | Name                 | Age   | Disease              |");
-        System.out.println("-------------------------------------------------------------------------");
-        for (Patient p : patients) System.out.println(p);
-        System.out.println("-------------------------------------------------------------------------");
-    }
-
-    private static void searchPatient() {
-        System.out.print("Enter Name or ID to search: ");
-        String query = scanner.nextLine();
-        Patient p = service.findPatientById(query);
-        if (p != null) {
-            System.out.println("Patient Found: " + p);
-        } else {
-            List<Patient> results = service.searchPatientByName(query);
-            if (results.isEmpty()) {
-                System.out.println("No patient found matching query.");
+        if (choice.equals("1")) {
+            System.out.print("Enter Name: ");
+            String name = scanner.nextLine();
+            System.out.print("Enter Email: ");
+            String email = scanner.nextLine();
+            System.out.print("Enter Password: ");
+            String pass = scanner.nextLine();
+            System.out.print("Enter Specialization: ");
+            String spec = scanner.nextLine();
+            String id = "D" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+            service.addDoctor(new Doctor(id, name, email, pass, spec, true));
+            System.out.println("✅ Doctor added successfully!");
+        } else if (choice.equals("2")) {
+            System.out.print("Enter Doctor ID to edit: ");
+            Doctor d = service.findDoctorById(scanner.nextLine().trim());
+            if (d != null) {
+                System.out.print("Enter New Name (leave blank to keep current): ");
+                String name = scanner.nextLine();
+                if (!name.isEmpty())
+                    d.setName(name);
+                System.out.print("Enter New Specialization (leave blank to keep current): ");
+                String spec = scanner.nextLine();
+                if (!spec.isEmpty())
+                    d.setSpecialization(spec);
+                service.saveData();
+                System.out.println("✅ Doctor updated.");
             } else {
-                for (Patient rp : results) System.out.println(rp);
+                System.out.println("❌ Doctor not found.");
+            }
+        } else if (choice.equals("3")) {
+            System.out.print("Enter Doctor ID to delete: ");
+            service.deleteDoctor(scanner.nextLine().trim());
+            System.out.println("✅ Doctor deleted (if existed).");
+        } else if (choice.equals("4")) {
+            for (Doctor d : service.getAllDoctors()) {
+                System.out.println(d);
             }
         }
     }
 
-    // Doctor Functions
-    private static void bookAppointment(Doctor doctor) {
-        System.out.print("Enter Patient ID: ");
-        String pId = scanner.nextLine();
-        Patient p = service.findPatientById(pId);
-        if (p == null) {
-            System.out.println("Patient not found!");
-            return;
+    private static void managePatients() {
+        System.out.println("\n--- Manage Patients ---");
+        System.out.println("1. Add Patient");
+        System.out.println("2. Edit Patient");
+        System.out.println("3. Delete Patient");
+        System.out.println("4. View All Patients");
+        System.out.print("Select: ");
+        String choice = scanner.nextLine().trim();
+
+        if (choice.equals("1")) {
+            System.out.print("Enter Name: ");
+            String name = scanner.nextLine();
+            System.out.print("Enter Email: ");
+            String email = scanner.nextLine();
+            System.out.print("Enter Password: ");
+            String pass = scanner.nextLine();
+            System.out.print("Enter Age: ");
+            int age = Integer.parseInt(scanner.nextLine());
+            System.out.print("Enter Disease: ");
+            String disease = scanner.nextLine();
+            String id = "P" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+            service.addPatient(new Patient(id, name, email, pass, age, disease));
+            System.out.println("✅ Patient added successfully!");
+        } else if (choice.equals("2")) {
+            System.out.print("Enter Patient ID to edit: ");
+            Patient p = service.findPatientById(scanner.nextLine().trim());
+            if (p != null) {
+                System.out.print("Enter New Name (leave blank to keep current): ");
+                String name = scanner.nextLine();
+                if (!name.isEmpty())
+                    p.setName(name);
+                System.out.print("Enter New Disease (leave blank to keep current): ");
+                String disease = scanner.nextLine();
+                if (!disease.isEmpty())
+                    p.setDisease(disease);
+                service.saveData();
+                System.out.println("✅ Patient updated.");
+            } else {
+                System.out.println("❌ Patient not found.");
+            }
+        } else if (choice.equals("3")) {
+            System.out.print("Enter Patient ID to delete: ");
+            service.deletePatient(scanner.nextLine().trim());
+            System.out.println("✅ Patient deleted (if existed).");
+        } else if (choice.equals("4")) {
+            for (Patient p : service.getAllPatients()) {
+                System.out.println(p);
+            }
         }
-        System.out.print("Enter Date (DD/MM/YYYY): ");
-        String date = scanner.nextLine();
-        System.out.print("Enter Time (HH:MM): ");
-        String time = scanner.nextLine();
-        service.scheduleAppointment(new Appointment(pId, doctor.getId(), date, time));
-        System.out.println("Appointment booked for " + p.getName());
     }
 
-    private static void viewAppointments(Doctor doctor) {
-        List<Appointment> apps = service.getAppointmentsByDoctorId(doctor.getId());
-        if (apps.isEmpty()) {
-            System.out.println("\nNo scheduled appointments for " + doctor.getName());
+    private static void approveDoctors() {
+        List<Doctor> pending = service.getAllDoctors().stream().filter(d -> !d.isApproved())
+                .collect(Collectors.toList());
+        if (pending.isEmpty()) {
+            System.out.println("No pending doctor registrations.");
             return;
         }
-        System.out.println("\n------------------------------------------------------");
-        System.out.println("| Patient ID | Doctor ID  | Date         | Time     |");
-        System.out.println("------------------------------------------------------");
-        for (Appointment a : apps) System.out.println(a);
-        System.out.println("------------------------------------------------------");
+        for (Doctor d : pending) {
+            System.out.println(d);
+            System.out.print("Approve this doctor? (yes/no): ");
+            if (scanner.nextLine().equalsIgnoreCase("yes")) {
+                d.setApproved(true);
+                service.saveData();
+                System.out.println("✅ Approved!");
+            }
+        }
     }
 
-    private static void addPrescription(Doctor doctor) {
-        System.out.print("Enter Patient ID: ");
-        String pId = scanner.nextLine();
-        Patient p = service.findPatientById(pId);
-        if (p == null) {
-            System.out.println("Patient not found!");
+    private static void resetPassword() {
+        System.out.print("Enter user email to reset password: ");
+        String email = scanner.nextLine().trim();
+        System.out.print("Enter new password: ");
+        String newPass = scanner.nextLine().trim();
+
+        if (email.equalsIgnoreCase(ADMIN_EMAIL)) {
+            adminPassword = newPass;
+            System.out.println("✅ Admin password reset.");
             return;
         }
+
+        for (Doctor d : service.getAllDoctors()) {
+            if (d.getEmail().equalsIgnoreCase(email)) {
+                d.setPassword(newPass);
+                service.saveData();
+                System.out.println("✅ Doctor password reset.");
+                return;
+            }
+        }
+        for (Patient p : service.getAllPatients()) {
+            if (p.getEmail().equalsIgnoreCase(email)) {
+                p.setPassword(newPass);
+                service.saveData();
+                System.out.println("✅ Patient password reset.");
+                return;
+            }
+        }
+        System.out.println("❌ Email not found.");
+    }
+
+    private static void viewAllAppointments() {
+        for (Appointment a : service.getAllAppointments()) {
+            System.out.println(a);
+        }
+    }
+
+    private static void viewAllPrescriptions() {
+        for (Prescription p : service.getAllPrescriptions()) {
+            System.out.println(p);
+        }
+    }
+
+    // ================= DOCTOR MENU =================
+    private static void doctorMenu(Doctor doc) {
+        while (true) {
+            System.out.println("\n--- DOCTOR DASHBOARD (Welcome " + doc.getName() + ") ---");
+            System.out.println("1. View My Appointments");
+            System.out.println("2. Approve/Reject Appointments");
+            System.out.println("3. Create Prescription");
+            System.out.println("4. Logout");
+            System.out.print("Select an option: ");
+
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "1":
+                    for (Appointment a : service.getAppointmentsByDoctorId(doc.getId()))
+                        System.out.println(a);
+                    break;
+                case "2":
+                    manageAppointments(doc);
+                    break;
+                case "3":
+                    createPrescription(doc);
+                    break;
+                case "4":
+                    return;
+                default:
+                    System.out.println("❌ Invalid choice!");
+            }
+        }
+    }
+
+    private static void manageAppointments(Doctor doc) {
+        List<Appointment> pending = service.getAppointmentsByDoctorId(doc.getId()).stream()
+                .filter(a -> a.getStatus().equals("PENDING")).collect(Collectors.toList());
+        if (pending.isEmpty()) {
+            System.out.println("No pending appointments.");
+            return;
+        }
+        for (Appointment a : pending) {
+            System.out.println(a);
+            System.out.print("Approve (A) / Reject (R) / Skip (S): ");
+            String action = scanner.nextLine().toUpperCase();
+            if (action.equals("A")) {
+                service.approveAppointment(a);
+                System.out.println("✅ Approved. Token Number: " + a.getTokenNumber());
+            } else if (action.equals("R")) {
+                service.rejectAppointment(a);
+                System.out.println("❌ Rejected.");
+            }
+        }
+    }
+
+    private static void createPrescription(Doctor doc) {
+        System.out.print("Enter Patient ID: ");
+        String patId = scanner.nextLine();
+        Patient p = service.findPatientById(patId);
+        if (p == null) {
+            System.out.println("❌ Patient not found.");
+            return;
+        }
+        System.out.print("Enter Diagnosis: ");
+        String diag = scanner.nextLine();
         System.out.print("Enter Medicine: ");
         String med = scanner.nextLine();
         System.out.print("Enter Dosage: ");
-        String dosage = scanner.nextLine();
-        service.addPrescription(new Prescription(pId, doctor.getId(), med, dosage));
-        System.out.println("Prescription added successfully!");
+        String dos = scanner.nextLine();
+        System.out.print("Enter Instructions: ");
+        String inst = scanner.nextLine();
+
+        String preId = "PR" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        service.addPrescription(new Prescription(preId, patId, doc.getId(), diag, med, dos, inst));
+        System.out.println("✅ Prescription saved and exported to file.");
     }
 
-    private static void viewPatientRecords() {
-        System.out.print("Enter Patient ID: ");
-        String pId = scanner.nextLine();
-        Patient p = service.findPatientById(pId);
-        if (p == null) {
-            System.out.println("Patient not found!");
-            return;
-        }
-        System.out.println("\n--- Patient Details ---");
-        System.out.println(p);
-        System.out.println("\n--- Prescriptions ---");
-        List<Prescription> pres = service.getPrescriptionsByPatientId(pId);
-        if (pres.isEmpty()) {
-            System.out.println("No prescriptions found.");
-        } else {
-            for (Prescription pr : pres) System.out.println(pr);
+    // ================= PATIENT MENU =================
+    private static void patientMenu(Patient pat) {
+        while (true) {
+            System.out.println("\n--- PATIENT DASHBOARD (Welcome " + pat.getName() + ") ---");
+            System.out.println("1. Book Appointment");
+            System.out.println("2. View My Appointments (Tokens & Status)");
+            System.out.println("3. View My Prescriptions");
+            System.out.println("4. Logout");
+            System.out.print("Select an option: ");
+
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "1":
+                    bookAppointment(pat);
+                    break;
+                case "2":
+                    for (Appointment a : service.getAppointmentsByPatientId(pat.getId()))
+                        System.out.println(a);
+                    break;
+                case "3":
+                    for (Prescription p : service.getPrescriptionsByPatientId(pat.getId()))
+                        System.out.println(p);
+                    break;
+                case "4":
+                    return;
+                default:
+                    System.out.println("❌ Invalid choice!");
+            }
         }
     }
 
-    // Patient Functions
-    private static void viewPatientAppointments(Patient patient) {
-        List<Appointment> apps = service.getAppointmentsByPatientId(patient.getId());
-        if (apps.isEmpty()) {
-            System.out.println("\nYou have no scheduled appointments.");
+    private static void bookAppointment(Patient pat) {
+        System.out.println("\n--- Available Doctors ---");
+        for (Doctor d : service.getApprovedDoctors()) {
+            System.out.println(d);
+        }
+        System.out.print("Enter Doctor ID to book: ");
+        String docId = scanner.nextLine();
+        if (service.findDoctorById(docId) == null) {
+            System.out.println("❌ Invalid Doctor ID.");
             return;
         }
-        System.out.println("\n--- My Appointments ---");
-        System.out.println("------------------------------------------------------");
-        System.out.println("| Doctor ID  | Date         | Time     |");
-        System.out.println("------------------------------------------------------");
-        for (Appointment a : apps) {
-            System.out.printf("| %-10s | %-12s | %-8s |\n", a.getDoctorId(), a.getDate(), a.getTime());
-        }
-        System.out.println("------------------------------------------------------");
-    }
+        System.out.print("Enter Date (YYYY-MM-DD): ");
+        String date = scanner.nextLine();
+        System.out.print("Enter Time (HH:MM): ");
+        String time = scanner.nextLine();
 
-    private static void viewPatientPrescriptions(Patient patient) {
-        List<Prescription> pres = service.getPrescriptionsByPatientId(patient.getId());
-        if (pres.isEmpty()) {
-            System.out.println("\nYou have no prescriptions.");
-            return;
-        }
-        System.out.println("\n--- My Prescriptions ---");
-        for (Prescription pr : pres) {
-            System.out.println(pr);
-        }
+        String appId = "A" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        service.scheduleAppointment(new Appointment(appId, pat.getId(), docId, date, time));
+        System.out.println("✅ Appointment requested. Pending doctor approval.");
     }
 }
