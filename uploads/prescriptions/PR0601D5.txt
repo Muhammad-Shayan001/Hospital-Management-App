@@ -1,0 +1,5 @@
+Prescription ID: PR0601D5 | Patient: PB651 | Doctor: DC71D
+Diagnosis: panadol
+Medicine: panadol | Dosage: 1
+Instructions: 1
+---------------------------------------------------------

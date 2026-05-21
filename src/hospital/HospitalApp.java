@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public class HospitalApp {
     private static final Scanner scanner = new Scanner(System.in);
     private static final HospitalService service = new HospitalService();
-    private static final String ADMIN_EMAIL = "muhammad.shayan0927@gmail.com";
+    private static final String ADMIN_EMAIL = "admin@gmail.com";
     private static String adminPassword = "Admin123"; // Default admin password
 
     public static void main(String[] args) {
@@ -202,6 +202,13 @@ public class HospitalApp {
             service.addDoctor(new Doctor(id, name, email, pass, spec, true));
             System.out.println("✅ Doctor added successfully!");
         } else if (choice.equals("2")) {
+            if (service.getAllDoctors().isEmpty()) {
+                System.out.println("❌ No doctors are registered in the system yet.");
+                return;
+            }
+            System.out.println("\n--- Registered Doctors ---");
+            for (Doctor doc : service.getAllDoctors()) System.out.println(doc);
+            System.out.println("--------------------------");
             System.out.print("Enter Doctor ID to edit: ");
             Doctor d = service.findDoctorById(scanner.nextLine().trim());
             if (d != null) {
@@ -219,12 +226,26 @@ public class HospitalApp {
                 System.out.println("❌ Doctor not found.");
             }
         } else if (choice.equals("3")) {
+            if (service.getAllDoctors().isEmpty()) {
+                System.out.println("❌ No doctors are registered in the system yet.");
+                return;
+            }
+            System.out.println("\n--- Registered Doctors ---");
+            for (Doctor doc : service.getAllDoctors()) System.out.println(doc);
+            System.out.println("--------------------------");
             System.out.print("Enter Doctor ID to delete: ");
-            service.deleteDoctor(scanner.nextLine().trim());
-            System.out.println("✅ Doctor deleted (if existed).");
+            String delId = scanner.nextLine().trim();
+            if (service.findDoctorById(delId) == null) {
+                System.out.println("❌ Doctor with ID '" + delId + "' not found.");
+            } else {
+                service.deleteDoctor(delId);
+                System.out.println("✅ Doctor deleted successfully.");
+            }
         } else if (choice.equals("4")) {
-            for (Doctor d : service.getAllDoctors()) {
-                System.out.println(d);
+            if (service.getAllDoctors().isEmpty()) {
+                System.out.println("❌ No doctors are registered in the system yet.");
+            } else {
+                for (Doctor d : service.getAllDoctors()) System.out.println(d);
             }
         }
     }
@@ -253,6 +274,13 @@ public class HospitalApp {
             service.addPatient(new Patient(id, name, email, pass, age, disease));
             System.out.println("✅ Patient added successfully!");
         } else if (choice.equals("2")) {
+            if (service.getAllPatients().isEmpty()) {
+                System.out.println("❌ No patients are registered in the system yet.");
+                return;
+            }
+            System.out.println("\n--- Registered Patients ---");
+            for (Patient pat : service.getAllPatients()) System.out.println(pat);
+            System.out.println("---------------------------");
             System.out.print("Enter Patient ID to edit: ");
             Patient p = service.findPatientById(scanner.nextLine().trim());
             if (p != null) {
@@ -270,12 +298,26 @@ public class HospitalApp {
                 System.out.println("❌ Patient not found.");
             }
         } else if (choice.equals("3")) {
+            if (service.getAllPatients().isEmpty()) {
+                System.out.println("❌ No patients are registered in the system yet.");
+                return;
+            }
+            System.out.println("\n--- Registered Patients ---");
+            for (Patient pat : service.getAllPatients()) System.out.println(pat);
+            System.out.println("---------------------------");
             System.out.print("Enter Patient ID to delete: ");
-            service.deletePatient(scanner.nextLine().trim());
-            System.out.println("✅ Patient deleted (if existed).");
+            String delId = scanner.nextLine().trim();
+            if (service.findPatientById(delId) == null) {
+                System.out.println("❌ Patient with ID '" + delId + "' not found.");
+            } else {
+                service.deletePatient(delId);
+                System.out.println("✅ Patient deleted successfully.");
+            }
         } else if (choice.equals("4")) {
-            for (Patient p : service.getAllPatients()) {
-                System.out.println(p);
+            if (service.getAllPatients().isEmpty()) {
+                System.out.println("❌ No patients are registered in the system yet.");
+            } else {
+                for (Patient p : service.getAllPatients()) System.out.println(p);
             }
         }
     }
@@ -393,7 +435,20 @@ public class HospitalApp {
     }
 
     private static void createPrescription(Doctor doc) {
-        System.out.print("Enter Patient ID: ");
+        System.out.println("\n--- Your Assigned Patients ---");
+        List<Appointment> apps = service.getAppointmentsByDoctorId(doc.getId());
+        if (apps.isEmpty()) {
+            System.out.println("You have no assigned patients to write a prescription for.");
+            return;
+        }
+        for (Appointment a : apps) {
+            Patient pt = service.findPatientById(a.getPatientId());
+            if (pt != null) {
+                System.out.println("Patient ID: " + pt.getId() + " | Name: " + pt.getName() + " | Appointment Status: " + a.getStatus());
+            }
+        }
+        System.out.println("------------------------------");
+        System.out.print("Enter Patient ID from the list above: ");
         String patId = scanner.nextLine();
         Patient p = service.findPatientById(patId);
         if (p == null) {
