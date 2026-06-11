@@ -32,24 +32,24 @@ public class AIHelper {
             }
             
             if (apiKey.isEmpty() || apiKey.equals("your_groq_api_key_here")) {
-                System.err.println("❌ ERROR: GROQ_API_KEY not found in config.properties or environment variables");
+                System.err.println("ERROR: GROQ_API_KEY not found in config.properties or environment variables");
                 return "";
             }
             return apiKey;
         } catch (Exception e) {
-            System.err.println("❌ ERROR loading config: " + e.getMessage());
+            System.err.println("ERROR loading config: " + e.getMessage());
             return "";
         }
     }
 
     public static void startChat(Scanner scanner) {
         if (GROQ_API_KEY.isEmpty()) {
-            System.out.println("❌ Cannot start AI Chat: API Key is missing!");
+            System.out.println("Cannot start AI Chat: API Key is missing!");
             return;
         }
 
         System.out.println("\n" + "=".repeat(50));
-        System.out.println("         🤖 AI Medical Health Assistant");
+        System.out.println("         AI Medical Health Assistant");
         System.out.println("=".repeat(50));
         System.out.println("I'm powered by Groq AI - your health companion");
         System.out.println("Ask me about symptoms, medications, health tips, etc.");
@@ -59,11 +59,11 @@ public class AIHelper {
         List<Message> conversationHistory = new ArrayList<>();
 
         while (true) {
-            System.out.print("📝 You: ");
+            System.out.print("You: ");
             String userInput = scanner.nextLine().trim();
 
             if (userInput.equalsIgnoreCase("exit") || userInput.equalsIgnoreCase("quit")) {
-                System.out.println("\n🏥 AI: Stay healthy! Goodbye! 👋\n");
+                System.out.println("\nAI: Stay healthy! Goodbye!\n");
                 break;
             }
 
@@ -72,15 +72,15 @@ public class AIHelper {
             }
 
             conversationHistory.add(new Message("user", userInput));
-            System.out.println("🤔 AI is thinking...");
+            System.out.println("AI is thinking...");
 
             String aiResponse = getGroqResponse(client, conversationHistory);
 
             if (aiResponse != null && !aiResponse.isEmpty()) {
-                System.out.println("💬 AI: " + aiResponse + "\n");
+                System.out.println("AI: " + aiResponse + "\n");
                 conversationHistory.add(new Message("assistant", aiResponse));
             } else {
-                System.out.println("❌ AI: Sorry, I couldn't get a response. Please try again.\n");
+                System.out.println("AI: Sorry, I couldn't get a response. Please try again.\n");
                 conversationHistory.remove(conversationHistory.size() - 1);
             }
         }
@@ -103,11 +103,11 @@ public class AIHelper {
             if (response.statusCode() == 200) {
                 return extractResponseText(response.body());
             } else {
-                System.err.println("❌ API Error: " + response.statusCode());
+                System.err.println("API Error: " + response.statusCode());
                 return null;
             }
         } catch (Exception e) {
-            System.err.println("❌ Error: " + e.getMessage());
+            System.err.println("Error: " + e.getMessage());
             return null;
         }
     }

@@ -2,25 +2,25 @@
 
 A professional Command Line Interface (CLI) application for managing hospital operations, built with Core Java and OOP principles.
 
-## 🚀 Features
+## Features
 
-### 🔐 Role-Based Access
+### Role-Based Access
 - **Admin**: Manage doctors, view patient records, and add new patients.
 - **Doctor**: Book appointments, manage prescriptions, and view medical history.
 
-### 📋 Modules
+### Modules
 - **Patient Management**: Add, view, and search patients.
 - **Doctor Management**: Register and list hospital staff.
 - **Appointment System**: Schedule visits with specific doctors.
 - **Prescription System**: Record medical advice and dosages.
 
-## 🛠️ Technical Details
+## Technical Details
 - **Language**: Java 8+
 - **Data Storage**: In-memory `ArrayList` (Dynamic storage)
 - **Architecture**: Modular design (Model-Service-App)
 - **Concepts**: Encapsulation, List manipulation, Stream API.
 
-## 🔑 Login Credentials
+## Login Credentials
 
 | Role   | Username / ID | Password  |
 |--------|---------------|-----------|
@@ -29,7 +29,7 @@ A professional Command Line Interface (CLI) application for managing hospital op
 
 *Note: You can add more doctors through the Admin menu.*
 
-## 🏃 How to Run
+## How to Run
 
 1. **Compile**:
    ```bash
@@ -41,7 +41,7 @@ A professional Command Line Interface (CLI) application for managing hospital op
    java -cp bin hospital.HospitalApp
    ```
 
-## 📂 Project Structure
+## Project Structure
 - `src/hospital/model/`: Data models (POJOs).
 - `src/hospital/service/`: Business logic and data management.
 - `src/hospital/HospitalApp.java`: Main entry point and CLI interface.

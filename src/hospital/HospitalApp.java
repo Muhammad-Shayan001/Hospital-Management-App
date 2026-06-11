@@ -17,7 +17,7 @@ public class HospitalApp {
 
     public static void main(String[] args) {
         System.out.println("==================================================");
-        System.out.println("     🏥 HOSPITAL MANAGEMENT SYSTEM (CLI)     ");
+        System.out.println("     HOSPITAL MANAGEMENT SYSTEM (CLI)     ");
         System.out.println("==================================================");
 
         while (true) {
@@ -43,7 +43,7 @@ public class HospitalApp {
                     System.out.println("Thank you for using the Hospital Management System. Goodbye!");
                     System.exit(0);
                 default:
-                    System.out.println("❌ Invalid choice! Please try again.");
+                    System.out.println("Invalid choice! Please try again.");
             }
         }
     }
@@ -67,33 +67,33 @@ public class HospitalApp {
 
         if (choice.equals("1")) {
             if (email.equalsIgnoreCase(ADMIN_EMAIL) && password.equals(adminPassword)) {
-                System.out.println("\n✅ Login Successful!");
+                System.out.println("\nLogin Successful!");
                 adminMenu();
             } else {
-                System.out.println("❌ Invalid Admin Credentials!");
+                System.out.println("Invalid Admin Credentials!");
             }
         } else if (choice.equals("2")) {
             Doctor doc = service.authenticateDoctor(email, password);
             if (doc != null) {
                 if (!doc.isApproved()) {
-                    System.out.println("❌ Account pending admin approval.");
+                    System.out.println("Account pending admin approval.");
                 } else {
-                    System.out.println("\n✅ Login Successful!");
+                    System.out.println("\nLogin Successful!");
                     doctorMenu(doc);
                 }
             } else {
-                System.out.println("❌ Invalid Doctor Credentials!");
+                System.out.println("Invalid Doctor Credentials!");
             }
         } else if (choice.equals("3")) {
             Patient pat = service.authenticatePatient(email, password);
             if (pat != null) {
-                System.out.println("\n✅ Login Successful!");
+                System.out.println("\nLogin Successful!");
                 patientMenu(pat);
             } else {
-                System.out.println("❌ Invalid Patient Credentials!");
+                System.out.println("Invalid Patient Credentials!");
             }
         } else {
-            System.out.println("❌ Invalid choice.");
+            System.out.println("Invalid choice.");
         }
     }
 
@@ -118,7 +118,7 @@ public class HospitalApp {
 
             Doctor doc = new Doctor(id, name, email, pass, spec, false);
             service.addDoctor(doc);
-            System.out.println("✅ Registration successful. Waiting for admin approval.");
+            System.out.println("Registration successful. Waiting for admin approval.");
 
         } else if (choice.equals("2")) {
             System.out.print("Enter Name: ");
@@ -135,7 +135,7 @@ public class HospitalApp {
 
             Patient pat = new Patient(id, name, email, pass, age, disease);
             service.addPatient(pat);
-            System.out.println("✅ Registration successful. You can now login.");
+            System.out.println("Registration successful. You can now login.");
         }
     }
 
@@ -175,7 +175,7 @@ public class HospitalApp {
                 case "7":
                     return;
                 default:
-                    System.out.println("❌ Invalid choice!");
+                    System.out.println("Invalid choice!");
             }
         }
     }
@@ -200,10 +200,10 @@ public class HospitalApp {
             String spec = scanner.nextLine();
             String id = "D" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
             service.addDoctor(new Doctor(id, name, email, pass, spec, true));
-            System.out.println("✅ Doctor added successfully!");
+            System.out.println("Doctor added successfully!");
         } else if (choice.equals("2")) {
             if (service.getAllDoctors().isEmpty()) {
-                System.out.println("❌ No doctors are registered in the system yet.");
+                System.out.println("No doctors are registered in the system yet.");
                 return;
             }
             System.out.println("\n--- Registered Doctors ---");
@@ -221,13 +221,13 @@ public class HospitalApp {
                 if (!spec.isEmpty())
                     d.setSpecialization(spec);
                 service.saveData();
-                System.out.println("✅ Doctor updated.");
+                System.out.println("Doctor updated.");
             } else {
-                System.out.println("❌ Doctor not found.");
+                    System.out.println("Doctor not found.");
             }
         } else if (choice.equals("3")) {
             if (service.getAllDoctors().isEmpty()) {
-                System.out.println("❌ No doctors are registered in the system yet.");
+                    System.out.println("No doctors are registered in the system yet.");
                 return;
             }
             System.out.println("\n--- Registered Doctors ---");
@@ -236,14 +236,14 @@ public class HospitalApp {
             System.out.print("Enter Doctor ID to delete: ");
             String delId = scanner.nextLine().trim();
             if (service.findDoctorById(delId) == null) {
-                System.out.println("❌ Doctor with ID '" + delId + "' not found.");
+                System.out.println("Doctor with ID '" + delId + "' not found.");
             } else {
                 service.deleteDoctor(delId);
-                System.out.println("✅ Doctor deleted successfully.");
+                System.out.println("Doctor deleted successfully.");
             }
         } else if (choice.equals("4")) {
             if (service.getAllDoctors().isEmpty()) {
-                System.out.println("❌ No doctors are registered in the system yet.");
+                System.out.println("No doctors are registered in the system yet.");
             } else {
                 for (Doctor d : service.getAllDoctors()) System.out.println(d);
             }
@@ -272,10 +272,10 @@ public class HospitalApp {
             String disease = scanner.nextLine();
             String id = "P" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
             service.addPatient(new Patient(id, name, email, pass, age, disease));
-            System.out.println("✅ Patient added successfully!");
+            System.out.println("Patient added successfully!");
         } else if (choice.equals("2")) {
             if (service.getAllPatients().isEmpty()) {
-                System.out.println("❌ No patients are registered in the system yet.");
+                System.out.println("No patients are registered in the system yet.");
                 return;
             }
             System.out.println("\n--- Registered Patients ---");
@@ -293,13 +293,13 @@ public class HospitalApp {
                 if (!disease.isEmpty())
                     p.setDisease(disease);
                 service.saveData();
-                System.out.println("✅ Patient updated.");
+                System.out.println("Patient updated.");
             } else {
-                System.out.println("❌ Patient not found.");
+                System.out.println("Patient not found.");
             }
         } else if (choice.equals("3")) {
             if (service.getAllPatients().isEmpty()) {
-                System.out.println("❌ No patients are registered in the system yet.");
+                System.out.println("No patients are registered in the system yet.");
                 return;
             }
             System.out.println("\n--- Registered Patients ---");
@@ -308,14 +308,14 @@ public class HospitalApp {
             System.out.print("Enter Patient ID to delete: ");
             String delId = scanner.nextLine().trim();
             if (service.findPatientById(delId) == null) {
-                System.out.println("❌ Patient with ID '" + delId + "' not found.");
+                System.out.println("Patient with ID '" + delId + "' not found.");
             } else {
                 service.deletePatient(delId);
-                System.out.println("✅ Patient deleted successfully.");
+                System.out.println("Patient deleted successfully.");
             }
         } else if (choice.equals("4")) {
             if (service.getAllPatients().isEmpty()) {
-                System.out.println("❌ No patients are registered in the system yet.");
+                System.out.println("No patients are registered in the system yet.");
             } else {
                 for (Patient p : service.getAllPatients()) System.out.println(p);
             }
@@ -335,7 +335,7 @@ public class HospitalApp {
             if (scanner.nextLine().equalsIgnoreCase("yes")) {
                 d.setApproved(true);
                 service.saveData();
-                System.out.println("✅ Approved!");
+                System.out.println("Approved!");
             }
         }
     }
@@ -348,7 +348,7 @@ public class HospitalApp {
 
         if (email.equalsIgnoreCase(ADMIN_EMAIL)) {
             adminPassword = newPass;
-            System.out.println("✅ Admin password reset.");
+            System.out.println("Admin password reset.");
             return;
         }
 
@@ -356,7 +356,7 @@ public class HospitalApp {
             if (d.getEmail().equalsIgnoreCase(email)) {
                 d.setPassword(newPass);
                 service.saveData();
-                System.out.println("✅ Doctor password reset.");
+                System.out.println("Doctor password reset.");
                 return;
             }
         }
@@ -364,11 +364,11 @@ public class HospitalApp {
             if (p.getEmail().equalsIgnoreCase(email)) {
                 p.setPassword(newPass);
                 service.saveData();
-                System.out.println("✅ Patient password reset.");
+                System.out.println("Patient password reset.");
                 return;
             }
         }
-        System.out.println("❌ Email not found.");
+        System.out.println("Email not found.");
     }
 
     private static void viewAllAppointments() {
@@ -408,7 +408,7 @@ public class HospitalApp {
                 case "4":
                     return;
                 default:
-                    System.out.println("❌ Invalid choice!");
+                    System.out.println("Invalid choice!");
             }
         }
     }
@@ -426,10 +426,10 @@ public class HospitalApp {
             String action = scanner.nextLine().toUpperCase();
             if (action.equals("A")) {
                 service.approveAppointment(a);
-                System.out.println("✅ Approved. Token Number: " + a.getTokenNumber());
+                System.out.println("Approved. Token Number: " + a.getTokenNumber());
             } else if (action.equals("R")) {
                 service.rejectAppointment(a);
-                System.out.println("❌ Rejected.");
+                System.out.println("Rejected.");
             }
         }
     }
@@ -452,7 +452,7 @@ public class HospitalApp {
         String patId = scanner.nextLine();
         Patient p = service.findPatientById(patId);
         if (p == null) {
-            System.out.println("❌ Patient not found.");
+            System.out.println("Patient not found.");
             return;
         }
         System.out.print("Enter Diagnosis: ");
@@ -466,7 +466,7 @@ public class HospitalApp {
 
         String preId = "PR" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         service.addPrescription(new Prescription(preId, patId, doc.getId(), diag, med, dos, inst));
-        System.out.println("✅ Prescription saved and exported to file.");
+        System.out.println("Prescription saved and exported to file.");
     }
 
     // ================= PATIENT MENU =================
@@ -495,7 +495,7 @@ public class HospitalApp {
                 case "4":
                     return;
                 default:
-                    System.out.println("❌ Invalid choice!");
+                    System.out.println("Invalid choice!");
             }
         }
     }
@@ -508,7 +508,7 @@ public class HospitalApp {
         System.out.print("Enter Doctor ID to book: ");
         String docId = scanner.nextLine();
         if (service.findDoctorById(docId) == null) {
-            System.out.println("❌ Invalid Doctor ID.");
+            System.out.println("Invalid Doctor ID.");
             return;
         }
         System.out.print("Enter Date (YYYY-MM-DD): ");
@@ -518,6 +518,6 @@ public class HospitalApp {
 
         String appId = "A" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
         service.scheduleAppointment(new Appointment(appId, pat.getId(), docId, date, time));
-        System.out.println("✅ Appointment requested. Pending doctor approval.");
+        System.out.println("Appointment requested. Pending doctor approval.");
     }
 }
