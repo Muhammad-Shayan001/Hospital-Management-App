@@ -51,7 +51,7 @@ public class AIHelper {
         System.out.println("\n" + "=".repeat(50));
         System.out.println("         AI Medical Health Assistant");
         System.out.println("=".repeat(50));
-        System.out.println("I'm powered by Groq AI - your health companion");
+        System.out.println("Your Health Companion - AI");
         System.out.println("Ask me about symptoms, medications, health tips, etc.");
         System.out.println("Type 'exit' to leave\n");
 
