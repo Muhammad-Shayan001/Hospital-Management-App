@@ -2,7 +2,6 @@ package hospital.util;
 
 import java.io.FileInputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,284 +10,177 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.Scanner;
 
 public class AIHelper {
-    private static final String PROVIDER = loadProvider();
-    private static final String API_KEY = loadApiKey(PROVIDER);
-    private static final String MODEL_NAME = loadModelName(PROVIDER);
-    private static final String API_URL = buildApiUrl(PROVIDER, MODEL_NAME);
+    private static final String GROQ_API_KEY = loadGroqApiKey();
+    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String MODEL = "llama-3.3-70b-versatile";
 
-    private static String loadProvider() {
+    private static String loadGroqApiKey() {
         try {
             Properties props = new Properties();
-            Path configPath = Paths.get(System.getProperty("user.dir"), "config.properties");
-            if (Files.exists(configPath)) {
-                try (FileInputStream input = new FileInputStream(configPath.toFile())) {
-                    props.load(input);
+            if (Files.exists(Paths.get("config.properties"))) {
+                try (FileInputStream fis = new FileInputStream("config.properties")) {
+                    props.load(fis);
                 }
             }
-
-            String provider = System.getenv("AI_PROVIDER");
-            if (provider == null || provider.isBlank()) {
-                provider = props.getProperty("AI_PROVIDER", "");
-            }
-
-            provider = provider.trim().toLowerCase();
-            if (provider.equals("groq") || provider.equals("gemini")) {
-                return provider;
-            }
-
-            String apiKey = readConfiguredKey(props);
-            if (apiKey.startsWith("gsk_")) {
-                return "groq";
-            }
-            return "gemini";
-        } catch (Exception e) {
-            return "gemini";
-        }
-    }
-
-    private static String loadApiKey(String provider) {
-        try {
-            Properties props = new Properties();
-            Path configPath = Paths.get(System.getProperty("user.dir"), "config.properties");
-            if (Files.exists(configPath)) {
-                try (FileInputStream input = new FileInputStream(configPath.toFile())) {
-                    props.load(input);
-                }
-            }
-
-            String apiKey = provider.equals("groq") ? System.getenv("GROQ_API_KEY") : System.getenv("GEMINI_API_KEY");
+            
+            String apiKey = System.getenv("GROQ_API_KEY");
             if (apiKey == null || apiKey.isBlank()) {
-                apiKey = provider.equals("groq")
-                        ? props.getProperty("GROQ_API_KEY", props.getProperty("GEMINI_API_KEY", ""))
-                        : props.getProperty("GEMINI_API_KEY", props.getProperty("GROQ_API_KEY", ""));
+                apiKey = props.getProperty("GROQ_API_KEY", "").trim();
             }
-
-            apiKey = apiKey.trim();
-            if (apiKey.isEmpty() || apiKey.equalsIgnoreCase("your_new_api_key_here") || apiKey.equalsIgnoreCase("your_groq_api_key_here")) {
+            
+            if (apiKey.isEmpty() || apiKey.equals("your_groq_api_key_here")) {
+                System.err.println("❌ ERROR: GROQ_API_KEY not found in config.properties or environment variables");
                 return "";
             }
             return apiKey;
         } catch (Exception e) {
-            System.err.println("Error: config.properties not found or missing AI API key");
+            System.err.println("❌ ERROR loading config: " + e.getMessage());
             return "";
         }
     }
 
-    private static String loadModelName(String provider) {
-        try {
-            Properties props = new Properties();
-            Path configPath = Paths.get(System.getProperty("user.dir"), "config.properties");
-            if (Files.exists(configPath)) {
-                try (FileInputStream input = new FileInputStream(configPath.toFile())) {
-                    props.load(input);
-                }
-            }
-
-            String defaultModel = provider.equals("groq") ? "llama-3.3-70b-versatile" : "gemini-1.5-flash";
-            String modelName = provider.equals("groq")
-                    ? props.getProperty("GROQ_MODEL", props.getProperty("GEMINI_MODEL", defaultModel))
-                    : props.getProperty("GEMINI_MODEL", props.getProperty("GROQ_MODEL", defaultModel));
-            modelName = modelName.trim();
-            return modelName.isEmpty() ? defaultModel : modelName;
-        } catch (Exception e) {
-            return provider.equals("groq") ? "llama-3.3-70b-versatile" : "gemini-1.5-flash";
-        }
-    }
-
-    private static String buildApiUrl(String provider, String modelName) {
-        if ("groq".equals(provider)) {
-            return "https://api.groq.com/openai/v1/chat/completions";
-        }
-        return "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent";
-    }
-
-    private static String readConfiguredKey(Properties props) {
-        String apiKey = System.getenv("GROQ_API_KEY");
-        if (apiKey == null || apiKey.isBlank()) {
-            apiKey = System.getenv("GEMINI_API_KEY");
-        }
-        if (apiKey == null || apiKey.isBlank()) {
-            apiKey = props.getProperty("GROQ_API_KEY", props.getProperty("GEMINI_API_KEY", ""));
-        }
-        return apiKey == null ? "" : apiKey.trim();
-    }
-
-    private static class Message {
-        String role;
-        String text;
-        Message(String role, String text) {
-            this.role = role;
-            this.text = text;
-        }
-    }
-
     public static void startChat(Scanner scanner) {
-        System.out.println("\n==================================================");
-        System.out.println("         🤖 AI Medical Assistant          ");
-        System.out.println("==================================================");
-        System.out.println("Hello! I am your AI Medical Assistant powered by " + ("groq".equals(PROVIDER) ? "Groq" : "Gemini") + ".");
-        System.out.println("I can provide basic health guidance and symptom checking.");
-        System.out.println("Type 'exit' or 'quit' to leave the chat.");
-        System.out.println("Note: This is for guidance only. Please consult a doctor for serious issues.\n");
-        
+        if (GROQ_API_KEY.isEmpty()) {
+            System.out.println("❌ Cannot start AI Chat: API Key is missing!");
+            return;
+        }
+
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("         🤖 AI Medical Health Assistant");
+        System.out.println("=".repeat(50));
+        System.out.println("I'm powered by Groq AI - your health companion");
+        System.out.println("Ask me about symptoms, medications, health tips, etc.");
+        System.out.println("Type 'exit' to leave\n");
+
         HttpClient client = HttpClient.newHttpClient();
-        List<Message> history = new ArrayList<>();
-        
-        while(true) {
-            System.out.print("You: ");
-            String input = scanner.nextLine().trim();
-            
-            if(input.equalsIgnoreCase("exit") || input.equalsIgnoreCase("quit")) {
-                System.out.println("AI: Goodbye! Stay healthy and take care.");
+        List<Message> conversationHistory = new ArrayList<>();
+
+        while (true) {
+            System.out.print("📝 You: ");
+            String userInput = scanner.nextLine().trim();
+
+            if (userInput.equalsIgnoreCase("exit") || userInput.equalsIgnoreCase("quit")) {
+                System.out.println("\n🏥 AI: Stay healthy! Goodbye! 👋\n");
                 break;
             }
-            
-            if(input.isEmpty()) continue;
-            
-            history.add(new Message("user", input));
-            
-            System.out.println("\nAI is typing...");
-            String responseText = getGeminiResponse(client, history);
-            
-            if (responseText != null && !responseText.isEmpty()) {
-                System.out.println("AI: " + responseText + "\n");
-                history.add(new Message("model", responseText));
+
+            if (userInput.isEmpty()) {
+                continue;
+            }
+
+            conversationHistory.add(new Message("user", userInput));
+            System.out.println("🤔 AI is thinking...");
+
+            String aiResponse = getGroqResponse(client, conversationHistory);
+
+            if (aiResponse != null && !aiResponse.isEmpty()) {
+                System.out.println("💬 AI: " + aiResponse + "\n");
+                conversationHistory.add(new Message("assistant", aiResponse));
             } else {
-                System.out.println("AI: Sorry, I am having trouble connecting to the server right now. Please try again later.\n");
-                history.remove(history.size() - 1); // remove the failed user prompt
+                System.out.println("❌ AI: Sorry, I couldn't get a response. Please try again.\n");
+                conversationHistory.remove(conversationHistory.size() - 1);
             }
         }
     }
 
-    private static String getGeminiResponse(HttpClient client, List<Message> history) {
-        if (API_KEY == null || API_KEY.isBlank()) {
-            System.err.println("AI API key is missing. Add GROQ_API_KEY or GEMINI_API_KEY to config.properties, or set the matching environment variable.");
-            return null;
-        }
-
+    private static String getGroqResponse(HttpClient client, List<Message> messages) {
         try {
-            String requestBody = "groq".equals(PROVIDER)
-                    ? buildGroqRequestBody(history)
-                    : buildGeminiRequestBody(history);
-                    
+            String requestBody = buildRequestBody(messages);
+            
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(API_URL))
+                    .uri(URI.create(GROQ_API_URL))
+                    .header("Authorization", "Bearer " + GROQ_API_KEY)
                     .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .header("groq".equals(PROVIDER) ? "Authorization" : "x-goog-api-key", groqHeaderValue())
                     .timeout(java.time.Duration.ofSeconds(30))
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
-                    
+
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            
+
             if (response.statusCode() == 200) {
-                return "groq".equals(PROVIDER) ? extractGroqTextFromJson(response.body()) : extractTextFromJson(response.body());
+                return extractResponseText(response.body());
             } else {
-                System.err.println("API Error (" + response.statusCode() + "): " + response.body());
+                System.err.println("❌ API Error: " + response.statusCode());
                 return null;
             }
         } catch (Exception e) {
-            System.err.println("Exception during API call: " + e.getMessage());
+            System.err.println("❌ Error: " + e.getMessage());
             return null;
         }
     }
 
-    private static String groqHeaderValue() {
-        return "groq".equals(PROVIDER) ? "Bearer " + API_KEY : API_KEY;
-    }
+    private static String buildRequestBody(List<Message> messages) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+        json.append("  \"model\": \"").append(MODEL).append("\",\n");
+        json.append("  \"messages\": [\n");
+        json.append("    {\n");
+        json.append("      \"role\": \"system\",\n");
+        json.append("      \"content\": \"You are a helpful health and medical assistant. Provide accurate, safe health guidance. Always encourage consulting a doctor for serious symptoms.\"\n");
+        json.append("    }");
 
-    private static String buildGeminiRequestBody(List<Message> history) {
-        StringBuilder requestBodyBuilder = new StringBuilder();
-        requestBodyBuilder.append("{\n");
-        requestBodyBuilder.append("  \"contents\": [\n");
-
-        for (int i = 0; i < history.size(); i++) {
-            Message msg = history.get(i);
-            requestBodyBuilder.append("    {\n");
-            requestBodyBuilder.append("      \"role\": \"").append(msg.role).append("\",\n");
-            requestBodyBuilder.append("      \"parts\": [{\"text\": \"").append(escapeJson(msg.text)).append("\"}]\n");
-            requestBodyBuilder.append("    }");
-            if (i < history.size() - 1) {
-                requestBodyBuilder.append(",");
-            }
-            requestBodyBuilder.append("\n");
-        }
-        requestBodyBuilder.append("  ]\n");
-        requestBodyBuilder.append("}\n");
-        return requestBodyBuilder.toString();
-    }
-
-    private static String buildGroqRequestBody(List<Message> history) {
-        StringBuilder requestBodyBuilder = new StringBuilder();
-        requestBodyBuilder.append("{\n");
-        requestBodyBuilder.append("  \"model\": \"").append(escapeJson(MODEL_NAME)).append("\",\n");
-        requestBodyBuilder.append("  \"messages\": [\n");
-        requestBodyBuilder.append("    {\"role\": \"system\", \"content\": \"You are a helpful medical assistant. Give concise, safe, general guidance and encourage professional care for serious symptoms.\"},\n");
-
-        for (int i = 0; i < history.size(); i++) {
-            Message msg = history.get(i);
-            String role = msg.role.equalsIgnoreCase("model") ? "assistant" : msg.role;
-            requestBodyBuilder.append("    {\"role\": \"").append(role).append("\", \"content\": \"").append(escapeJson(msg.text)).append("\"}");
-            if (i < history.size() - 1) {
-                requestBodyBuilder.append(",");
-            }
-            requestBodyBuilder.append("\n");
+        for (Message msg : messages) {
+            json.append(",\n");
+            json.append("    {\n");
+            json.append("      \"role\": \"").append(msg.role).append("\",\n");
+            json.append("      \"content\": \"").append(escapeJson(msg.content)).append("\"\n");
+            json.append("    }");
         }
 
-        requestBodyBuilder.append("  ],\n");
-        requestBodyBuilder.append("  \"temperature\": 0.7\n");
-        requestBodyBuilder.append("}\n");
-        return requestBodyBuilder.toString();
+        json.append("\n  ],\n");
+        json.append("  \"temperature\": 0.7\n");
+        json.append("}\n");
+
+        return json.toString();
+    }
+
+    private static String extractResponseText(String jsonResponse) {
+        try {
+            int startIndex = jsonResponse.indexOf("\"content\":");
+            if (startIndex == -1) return null;
+            
+            startIndex = jsonResponse.indexOf("\"", startIndex + 10);
+            if (startIndex == -1) return null;
+            
+            startIndex++;
+            int endIndex = jsonResponse.indexOf("\"", startIndex);
+            if (endIndex == -1) return null;
+
+            String content = jsonResponse.substring(startIndex, endIndex);
+            return unescapeJson(content);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static String escapeJson(String text) {
         if (text == null) return "";
         return text.replace("\\", "\\\\")
                    .replace("\"", "\\\"")
-                   .replace("\b", "\\b")
-                   .replace("\f", "\\f")
                    .replace("\n", "\\n")
                    .replace("\r", "\\r")
                    .replace("\t", "\\t");
     }
 
-    private static String extractTextFromJson(String json) {
-        try {
-            Matcher matcher = Pattern.compile("\\\"text\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\\\\\"])*)\\\"").matcher(json);
-            if (!matcher.find()) return "Could not parse response.";
-
-            String text = matcher.group(1);
-            return text.replace("\\n", "\n")
-                       .replace("\\r", "\r")
-                       .replace("\\t", "\t")
-                       .replace("\\\"", "\"")
-                       .replace("\\\\", "\\")
-                       .replaceAll("\\*\\*", "");
-        } catch (Exception e) {
-            return "Error parsing JSON response.";
-        }
+    private static String unescapeJson(String text) {
+        if (text == null) return "";
+        return text.replace("\\n", "\n")
+                   .replace("\\r", "\r")
+                   .replace("\\t", "\\t")
+                   .replace("\\\"", "\"")
+                   .replace("\\\\", "\\");
     }
 
-    private static String extractGroqTextFromJson(String json) {
-        try {
-            Matcher matcher = Pattern.compile("\\\"content\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\\\\\"])*)\\\"").matcher(json);
-            if (!matcher.find()) return "Could not parse response.";
+    private static class Message {
+        String role;
+        String content;
 
-            String text = matcher.group(1);
-            return text.replace("\\n", "\n")
-                       .replace("\\r", "\r")
-                       .replace("\\t", "\t")
-                       .replace("\\\"", "\"")
-                       .replace("\\\\", "\\")
-                       .replaceAll("\\*\\*", "");
-        } catch (Exception e) {
-            return "Error parsing JSON response.";
+        Message(String role, String content) {
+            this.role = role;
+            this.content = content;
         }
     }
 }
